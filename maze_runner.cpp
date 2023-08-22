@@ -50,23 +50,20 @@ pos_t load_maze(const char* file_name) {
 	while((c = fgetc(pFile)) != EOF) {
 		if (c == '\n') {
 			num_rows ++;
-		} else if (num_rows == 0 && c != ' ') {
+		} else if (num_rows == 0) {
 			num_cols ++;
 		}
-
 	}
-		if(c != '\n' && num_rows > 0) {
-			num_rows++;
-		}
+
 		fclose(pFile);
-		printf("%d, %d", num_cols, num_rows);
+		printf("%d, %d\n", num_rows, num_cols);
 
 	// Aloca a matriz maze (malloc)
-	maze = (char**)malloc(num_rows);
-	// for (int i = 0; i < num_rows; ++i) {
-	// 	// Aloca cada linha da matriz
-	// 	maze[i] = pFile[i];
-	// }
+	
+	for (int i = 0; i < num_rows; ++i) {
+		// Aloca cada linha da matriz
+		maze = (char**)malloc(sizeof(char));
+	}
 	
 	for (int i = 0; i < num_rows; ++i) {
 		for (int j = 0; j < num_cols; ++j) {
