@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stack>
 #include <cstdlib>
+#include <unistd.h>
 
 // Matriz de char representando o labirinto
 char** maze;
@@ -51,12 +52,14 @@ pos_t load_maze(const char* file_name) {
 
 // Função que imprime o labirinto
 void print_maze() {
+    usleep(10000);
     for (int i = 0; i < num_rows; ++i) {
         for (int j = 0; j < num_cols; ++j) {
             printf("%c", maze[i][j]);
         }
         printf("\n");
     }
+    usleep(10000);
 }
 
 // Função responsável pela navegação.
@@ -68,7 +71,6 @@ bool walk(pos_t initial_pos) {
     while (!valid_positions.empty()) {
         pos_t current_pos = valid_positions.top();
         valid_positions.pop();
-        
         maze[current_pos.i][current_pos.j] = '.'; // Marcar posição como explorada
         system("clear"); // Limpar a tela (Linux) ou use "cls" no Windows
         print_maze(); // Imprimir o labirinto
@@ -102,7 +104,7 @@ bool walk(pos_t initial_pos) {
 int main(int argc, char *argv[])
 {
 	// carregar o labirinto com o nome do arquivo recebido como argumento
-    // pos_t initial_pos = load_maze(argv[1]);
+     //pos_t initial_pos = load_maze(argv[1]);
 	pos_t initial_pos = load_maze("/workspaces/maze_runner/data/maze.txt");
     if (initial_pos.i == -1 && initial_pos.j == -1) {
         printf("Posição inicial não encontrada no labirinto.\n");
