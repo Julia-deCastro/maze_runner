@@ -50,16 +50,15 @@ pos_t load_maze(const char* file_name) {
     return initial_pos;
 }
 
-// Função que imprime o labirinto
-void print_maze() {
-    usleep(10000);
+// Função que imprime o labirinto com um atraso
+void print_maze_with_delay() {
     for (int i = 0; i < num_rows; ++i) {
         for (int j = 0; j < num_cols; ++j) {
             printf("%c", maze[i][j]);
         }
         printf("\n");
     }
-    usleep(10000);
+    usleep(10000); // Adiciona um atraso de 500000 microssegundos (0,5 segundos)
 }
 
 // Função responsável pela navegação.
@@ -72,15 +71,15 @@ bool walk(pos_t initial_pos) {
         pos_t current_pos = valid_positions.top();
         valid_positions.pop();
         maze[current_pos.i][current_pos.j] = '.'; // Marcar posição como explorada
-        system("clear"); // Limpar a tela (Linux) ou use "cls" no Windows
-        print_maze(); // Imprimir o labirinto
+        system("clear"); // Limpar a tela
+        print_maze_with_delay(); // Imprimir o labirinto
 
         // Saída encontrada
-        if (maze[current_pos.i][current_pos.j] == 's') val = 1;
-        if (current_pos.i > 0 && maze[current_pos.i - 1][current_pos.j] == 's') val = 1;
-        if (current_pos.i < num_rows - 1 && maze[current_pos.i + 1][current_pos.j] == 's') val = 1;
-        if (current_pos.j > 0 && maze[current_pos.i][current_pos.j - 1] == 's') val = 1;
-        if (current_pos.j < num_cols - 1 && maze[current_pos.i][current_pos.j + 1] == 's') val = 1;        
+        if (maze[current_pos.i][current_pos.j] == 's') return true;
+        if (current_pos.i > 0 && maze[current_pos.i - 1][current_pos.j] == 's') return true;
+        if (current_pos.i < num_rows - 1 && maze[current_pos.i + 1][current_pos.j] == 's') return true;
+        if (current_pos.j > 0 && maze[current_pos.i][current_pos.j - 1] == 's') return true;
+        if (current_pos.j < num_cols - 1 && maze[current_pos.i][current_pos.j + 1] == 's') return true;        
         
         // Verificar posições adjacentes válidas e adicioná-las na pilha
         if (current_pos.i > 0 && maze[current_pos.i - 1][current_pos.j] == 'x') {
@@ -96,16 +95,15 @@ bool walk(pos_t initial_pos) {
             valid_positions.push({current_pos.i, current_pos.j + 1});
         }
     }
-    
-	if (val == 1) return true;
-    else return false; // Saída não encontrada
+
+    return false; // Saída não encontrada
 }
 
 int main(int argc, char *argv[])
 {
 	// carregar o labirinto com o nome do arquivo recebido como argumento
-     //pos_t initial_pos = load_maze(argv[1]);
-	pos_t initial_pos = load_maze("/workspaces/maze_runner/data/maze.txt");
+    pos_t initial_pos = load_maze(argv[1]);
+	//pos_t initial_pos = load_maze("/workspaces/maze_runner/data/maze.txt");
     if (initial_pos.i == -1 && initial_pos.j == -1) {
         printf("Posição inicial não encontrada no labirinto.\n");
         return 1;
