@@ -58,7 +58,7 @@ void print_maze_with_delay() {
         }
         printf("\n");
     }
-    usleep(10000); // Adiciona um atraso de 500000 microssegundos (0,5 segundos)
+    usleep(50000); // Adiciona um atraso
 }
 
 // Função responsável pela navegação.
@@ -70,7 +70,7 @@ bool walk(pos_t initial_pos) {
     while (!valid_positions.empty()) {
         pos_t current_pos = valid_positions.top();
         valid_positions.pop();
-        maze[current_pos.i][current_pos.j] = '.'; // Marcar posição como explorada
+        maze[current_pos.i][current_pos.j] = 'o'; // Marcar posição como atual
         system("clear"); // Limpar a tela
         print_maze_with_delay(); // Imprimir o labirinto
 
@@ -94,8 +94,8 @@ bool walk(pos_t initial_pos) {
         if (current_pos.j < num_cols - 1 && maze[current_pos.i][current_pos.j + 1] == 'x') {
             valid_positions.push({current_pos.i, current_pos.j + 1});
         }
+        maze[current_pos.i][current_pos.j] = '.'; // Marcar posição como explorada
     }
-
     return false; // Saída não encontrada
 }
 
@@ -103,7 +103,6 @@ int main(int argc, char *argv[])
 {
 	// carregar o labirinto com o nome do arquivo recebido como argumento
     pos_t initial_pos = load_maze(argv[1]);
-	//pos_t initial_pos = load_maze("/workspaces/maze_runner/data/maze.txt");
     if (initial_pos.i == -1 && initial_pos.j == -1) {
         printf("Posição inicial não encontrada no labirinto.\n");
         return 1;
