@@ -2,6 +2,7 @@
 #include <stack>
 #include <cstdlib>
 #include <unistd.h>
+#include <thread>
 
 // Matriz de char representando o labirinto
 char** maze;
@@ -19,6 +20,7 @@ struct pos_t {
 // Estrutura de dados contendo as próximas
 // posicões a serem exploradas no labirinto
 std::stack<pos_t> valid_positions;
+
 
 // Função que le o labirinto de um arquivo texto, carrega em 
 // memória e retorna a posição inicial
@@ -65,14 +67,13 @@ void print_maze_with_delay() {
 // Recebe como entrada a posição initial e retorna um booleando indicando se a saída foi encontrada
 bool walk(pos_t initial_pos) {
     valid_positions.push(initial_pos);
-	int val = 0;
     
     while (!valid_positions.empty()) {
+        int val = 0;
         pos_t current_pos = valid_positions.top();
         valid_positions.pop();
         maze[current_pos.i][current_pos.j] = 'o'; // Marcar posição como atual
         system("clear"); // Limpar a tela
-        print_maze_with_delay(); // Imprimir o labirinto
 
         // Saída encontrada
         if (maze[current_pos.i][current_pos.j] == 's') return true;
@@ -84,19 +85,29 @@ bool walk(pos_t initial_pos) {
         // Verificar posições adjacentes válidas e adicioná-las na pilha
         if (current_pos.i > 0 && maze[current_pos.i - 1][current_pos.j] == 'x') {
             valid_positions.push({current_pos.i - 1, current_pos.j});
+            val += 1;
         }
         if (current_pos.i < num_rows - 1 && maze[current_pos.i + 1][current_pos.j] == 'x') {
             valid_positions.push({current_pos.i + 1, current_pos.j});
+            val += 1;
         }
         if (current_pos.j > 0 && maze[current_pos.i][current_pos.j - 1] == 'x') {
             valid_positions.push({current_pos.i, current_pos.j - 1});
+            val += 1;
         }
         if (current_pos.j < num_cols - 1 && maze[current_pos.i][current_pos.j + 1] == 'x') {
             valid_positions.push({current_pos.i, current_pos.j + 1});
+            val += 1;
         }
         maze[current_pos.i][current_pos.j] = '.'; // Marcar posição como explorada
+
     }
     return false; // Saída não encontrada
+}
+
+void *thread_func(pos_t initial_pos) {
+    bool exit_found = walk(initial_pos);
+    print_maze_with_delay(); // Imprimir o labirinto
 }
 
 int main(int argc, char *argv[])
@@ -109,6 +120,7 @@ int main(int argc, char *argv[])
     }
 
     bool exit_found = walk(initial_pos);
+    std::thread thread_func(initial_pos);
 
     if (exit_found) {
         printf("Saída encontrada!\n");
