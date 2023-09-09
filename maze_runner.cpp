@@ -1,13 +1,14 @@
-#include <stdio.h>
-#include <stack>
-#include <cstdlib>
-#include <unistd.h>
+#include <iostream>
+#include <fstream>
+#include <vector>
 #include <thread>
+#include <chrono>
+#include <atomic>
 
 // Matriz de char representando o labirinto
-char** maze;
+std::vector<std::vector<char>> maze;
 
-// Numero de linhas e colunas do labirinto
+// Número de linhas e colunas do labirinto
 int num_rows = 0;
 int num_cols = 0;
 
@@ -17,30 +18,25 @@ struct pos_t {
     int j;
 };
 
-// Estrutura de dados contendo as próximas
-// posicões a serem exploradas no labirinto
-std::stack<pos_t> valid_positions;
+// Variável de controle para indicar quando a saída foi encontrada
+std::atomic<bool> exit_found(false);
 
-
-// Função que le o labirinto de um arquivo texto, carrega em 
-// memória e retorna a posição inicial
+// Função que lê o labirinto de um arquivo texto, carrega em memória e retorna a posição inicial
 pos_t load_maze(const char* file_name) {
     pos_t initial_pos = {-1, -1}; // Inicializa com valor inválido
 
-    FILE * pFile;
-    pFile = fopen(file_name, "r");
-    if (!pFile) {
-        perror("Erro ao abrir o arquivo");
+    std::ifstream file(file_name);
+    if (!file.is_open()) {
+        std::cerr << "Erro ao abrir o arquivo" << std::endl;
         exit(1);
     }
 
-    fscanf(pFile, "%d %d\n", &num_rows, &num_cols);
+    file >> num_rows >> num_cols;
 
-    maze = (char**)malloc(num_rows * sizeof(char*));
+    maze.resize(num_rows, std::vector<char>(num_cols));
     for (int i = 0; i < num_rows; ++i) {
-        maze[i] = (char*)malloc(num_cols * sizeof(char));
         for (int j = 0; j < num_cols; ++j) {
-            fscanf(pFile, "%c ", &maze[i][j]);
+            file >> maze[i][j];
             if (maze[i][j] == 'e') {
                 initial_pos.i = i;
                 initial_pos.j = j;
@@ -48,7 +44,6 @@ pos_t load_maze(const char* file_name) {
         }
     }
     
-    fclose(pFile);
     return initial_pos;
 }
 
@@ -56,78 +51,97 @@ pos_t load_maze(const char* file_name) {
 void print_maze_with_delay() {
     for (int i = 0; i < num_rows; ++i) {
         for (int j = 0; j < num_cols; ++j) {
-            printf("%c", maze[i][j]);
+            std::cout << maze[i][j];
         }
-        printf("\n");
+        std::cout << std::endl;
     }
-    usleep(50000); // Adiciona um atraso
+    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Adiciona um atraso
 }
 
 // Função responsável pela navegação.
-// Recebe como entrada a posição initial e retorna um booleando indicando se a saída foi encontrada
-bool walk(pos_t initial_pos) {
-    valid_positions.push(initial_pos);
-    
+// Recebe como entrada a posição initial
+void walk(pos_t initial_pos) {
+    std::vector<pos_t> valid_positions;
+    valid_positions.push_back(initial_pos);
+
     while (!valid_positions.empty()) {
-        int val = 0;
-        pos_t current_pos = valid_positions.top();
-        valid_positions.pop();
+        if (exit_found) return;  // Verificar se a saída foi encontrada antes de continuar
+
+        pos_t current_pos = valid_positions.back();
+        valid_positions.pop_back();
+        
         maze[current_pos.i][current_pos.j] = 'o'; // Marcar posição como atual
         system("clear"); // Limpar a tela
+        print_maze_with_delay(); // Imprimir o labirinto
 
         // Saída encontrada
-        if (maze[current_pos.i][current_pos.j] == 's') return true;
-        if (current_pos.i > 0 && maze[current_pos.i - 1][current_pos.j] == 's') return true;
-        if (current_pos.i < num_rows - 1 && maze[current_pos.i + 1][current_pos.j] == 's') return true;
-        if (current_pos.j > 0 && maze[current_pos.i][current_pos.j - 1] == 's') return true;
-        if (current_pos.j < num_cols - 1 && maze[current_pos.i][current_pos.j + 1] == 's') return true;        
-        
+        if (maze[current_pos.i][current_pos.j] == 's') {
+            exit_found = true;
+            return; // Saia da função quando a saída for encontrada
+        }
+        // Saída encontrada
+        if (current_pos.i > 0 && maze[current_pos.i - 1][current_pos.j] == 's') {
+            exit_found = true;
+            return; // Saia da função quando a saída for encontrada
+        }
+        if (current_pos.i < num_rows - 1 && maze[current_pos.i + 1][current_pos.j] == 's') {
+            exit_found = true;
+            return; // Saia da função quando a saída for encontrada
+        }
+        if (current_pos.j > 0 && maze[current_pos.i][current_pos.j - 1] == 's') {
+            exit_found = true;
+            return; // Saia da função quando a saída for encontrada
+        }
+        if (current_pos.j < num_cols - 1 && maze[current_pos.i][current_pos.j + 1] == 's') {
+            exit_found = true;
+            return; // Saia da função quando a saída for encontrada
+        } 
+
         // Verificar posições adjacentes válidas e adicioná-las na pilha
+        std::vector<std::thread> new_threads; // Armazenar novas threads
         if (current_pos.i > 0 && maze[current_pos.i - 1][current_pos.j] == 'x') {
-            valid_positions.push({current_pos.i - 1, current_pos.j});
-            val += 1;
+            new_threads.emplace_back(walk, pos_t{current_pos.i - 1, current_pos.j});
         }
         if (current_pos.i < num_rows - 1 && maze[current_pos.i + 1][current_pos.j] == 'x') {
-            valid_positions.push({current_pos.i + 1, current_pos.j});
-            val += 1;
+            new_threads.emplace_back(walk, pos_t{current_pos.i + 1, current_pos.j});
         }
         if (current_pos.j > 0 && maze[current_pos.i][current_pos.j - 1] == 'x') {
-            valid_positions.push({current_pos.i, current_pos.j - 1});
-            val += 1;
+            new_threads.emplace_back(walk, pos_t{current_pos.i, current_pos.j - 1});
         }
         if (current_pos.j < num_cols - 1 && maze[current_pos.i][current_pos.j + 1] == 'x') {
-            valid_positions.push({current_pos.i, current_pos.j + 1});
-            val += 1;
+            new_threads.emplace_back(walk, pos_t{current_pos.i, current_pos.j + 1});
         }
         maze[current_pos.i][current_pos.j] = '.'; // Marcar posição como explorada
-
+        // Iniciar novas threads para explorar bifurcações
+        for (std::thread& thread : new_threads) {
+            thread.join(); // Esperar a nova thread terminar
+        }
     }
-    return false; // Saída não encontrada
 }
 
-void *thread_func(pos_t initial_pos) {
-    bool exit_found = walk(initial_pos);
-    print_maze_with_delay(); // Imprimir o labirinto
-}
-
-int main(int argc, char *argv[])
-{
-	// carregar o labirinto com o nome do arquivo recebido como argumento
-    pos_t initial_pos = load_maze(argv[1]);
-    if (initial_pos.i == -1 && initial_pos.j == -1) {
-        printf("Posição inicial não encontrada no labirinto.\n");
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        std::cerr << "Uso: " << argv[0] << " <arquivo_do_labirinto.txt>" << std::endl;
         return 1;
     }
 
-    bool exit_found = walk(initial_pos);
-    std::thread thread_func(initial_pos);
+    pos_t initial_pos = load_maze(argv[1]);
+    if (initial_pos.i == -1 && initial_pos.j == -1) {
+        std::cerr << "Posição inicial não encontrada no labirinto." << std::endl;
+        return 1;
+    }
+
+    // Iniciar a primeira thread com a posição inicial
+    std::thread first_thread(walk, initial_pos);
+
+    // Aguarde a primeira thread terminar
+    first_thread.join();
 
     if (exit_found) {
-        printf("Saída encontrada!\n");
+        std::cout << "Saída encontrada!" << std::endl;
     } else {
-        printf("Saída não encontrada.\n");
+        std::cout << "Saída não encontrada." << std::endl;
     }
 
     return 0;
 }
-
