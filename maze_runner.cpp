@@ -19,7 +19,7 @@ struct pos_t {
 };
 
 // Variável de controle para indicar quando a saída foi encontrada
-std::atomic<bool> exit_found(false);
+bool exit_found = false;
 
 // Função que lê o labirinto de um arquivo texto, carrega em memória e retorna a posição inicial
 pos_t load_maze(const char* file_name) {
@@ -47,15 +47,20 @@ pos_t load_maze(const char* file_name) {
     return initial_pos;
 }
 
-// Função que imprime o labirinto com um atraso
-void print_maze_with_delay() {
-    for (int i = 0; i < num_rows; ++i) {
-        for (int j = 0; j < num_cols; ++j) {
-            std::cout << maze[i][j];
-        }
-        std::cout << std::endl;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Adiciona um atraso
+
+void print_maze()
+{
+	while (!exit_found)
+	{
+		system("clear");
+		for (int i = 0; i < num_rows; ++i) {
+            for (int j = 0; j < num_cols; ++j) {
+                printf("%c", maze[i][j]);
+            }
+		    printf("\n");
+	    }
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	}
 }
 
 // Função responsável pela navegação.
@@ -71,8 +76,8 @@ void walk(pos_t initial_pos) {
         valid_positions.pop_back();
         
         maze[current_pos.i][current_pos.j] = 'o'; // Marcar posição como atual
-        system("clear"); // Limpar a tela
-        print_maze_with_delay(); // Imprimir o labirinto
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Sleep for 500ms
+
 
         // Saída encontrada
         if (maze[current_pos.i][current_pos.j] == 's') {
@@ -134,8 +139,9 @@ int main(int argc, char *argv[]) {
     // Iniciar a primeira thread com a posição inicial
     std::thread first_thread(walk, initial_pos);
 
-    // Aguarde a primeira thread terminar
-    first_thread.join();
+    first_thread.detach();
+
+    print_maze();
 
     if (exit_found) {
         std::cout << "Saída encontrada!" << std::endl;
